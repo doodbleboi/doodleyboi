@@ -1,11 +1,11 @@
 {
-  "description": "2806 Sarah Drive Community Fundraiser",
+  "description": "Portfolio and community project",
   "repo": "https://github.com/davidresetar/portfolio",
   "owner": {
-    "username": "davidresetar",
-    "email": "dresetar@gmail.com"
+    "username": "doodbleboi",
+    "email": "your-email@example.com"
   },
-  "records": {
+  "record": {
     "CNAME": "davidresetar.github.io"
   }
 }
