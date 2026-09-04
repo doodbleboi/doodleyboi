@@ -4,39 +4,28 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
 def extract_external_body(session, target_url):
-    """
-    Follows the outbound publisher link and attempts to harvest the true 
-    underlying paragraph components while avoiding tracking strings.
-    """
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept-Language": "en-US,en;q=0.9"
     }
-    
     try:
-        # Some links may be relative; resolve paths safely
         print(f"   --> Launching sub-request to publisher: {target_url}")
         res = session.get(target_url, headers=headers, timeout=10)
         if res.status_code != 200:
             return f"[Could not download full text. HTTP Status {res.status_code}]"
             
         sub_soup = BeautifulSoup(res.text, "html.parser")
-        
-        # Standard structural elements where newspapers stash article text bodies
-        paragraphs = sub_soup.find_all(["p", "article", "section"])
+        paragraphs = sub_soup.find_all("p")
         full_text_fragments = []
         
         for p in paragraphs:
-            # Skip short layout junk lines like menus, social buttons, or cookie warnings
             txt = p.get_text(" ", strip=True)
             if len(txt) > 60 and not any(k in txt.lower() for k in ["cookie", "subscribe", "sign in", "all rights reserved"]):
-                # Deduplicate elements found due to layered markup parent groupings
                 if txt not in full_text_fragments:
                     full_text_fragments.append(txt)
                     
         if full_text_fragments:
-            # Combine the isolated sentences back into a cohesive essay structure
-            return " ".join(full_text_fragments[:25]) # Limit to first 25 blocks to keep file neat
+            return " ".join(full_text_fragments[:25])
             
         return "[Full review body text not readable via semantic selectors]"
     except Exception as e:
@@ -58,7 +47,6 @@ def scrape_book_marks(book_slug):
     soup = BeautifulSoup(response.text, "html.parser")
     reviews_extracted = []
     
-    # Isolate all standard text layouts on the page layout 
     for div in soup.find_all("div"):
         text = div.get_text(" ", strip=True)
         
@@ -77,18 +65,15 @@ def scrape_book_marks(book_slug):
                     if "Similar Books" in text or len(critic) > 40 or len(outlet) > 40:
                         continue
                         
-                    # Locate the structural link matching this specific block
                     outbound_url = None
-                    link_element = div.find("a", string=lambda s: "Read Full Review" in str(s))
+                    link_element = div.find("a", string=lambda s: s and "Read Full Review" in str(s))
                     if not link_element:
-                        # Fallback check to scan inside parent or sibling structures
                         link_element = div.find("a", href=True)
                         
                     if link_element and link_element.get("href"):
                         outbound_url = urljoin(base_url, link_element.get("href"))
 
                     if not any(d['critic'] == critic for d in reviews_extracted):
-                        # Trigger the nested HTTP request engine to fetch the true layout text
                         full_review_content = "[No external hyperlink found]"
                         if outbound_url and "bookmarks.reviews" not in outbound_url:
                             full_review_content = extract_external_body(session, outbound_url)
