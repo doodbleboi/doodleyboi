@@ -18,7 +18,7 @@ def extract_external_body(session, target_url):
         if res.status_code != 200:
             return f"[Bypassing Failed. HTTP Status {res.status_code}]"
         sub_soup = BeautifulSoup(res.text, "html.parser")
-        paragraphs = sub_soup.find_all(["p", "article"])
+        paragraphs = sub_soup.find_all("p")
         full_text_fragments = []
         for p in paragraphs:
             txt = p.get_text(" ", strip=True)
@@ -62,7 +62,7 @@ def scrape_book_marks(book_slug):
                     link_element = div.find("a")
                     if link_element and link_element.get("href"):
                         outbound_url = urljoin(base_url, link_element.get("href"))
-                    if not any(d['critic'] == critic for d in reviews_extracted):
+                    if not any(d["critic"] == critic for d in reviews_extracted):
                         full_review_content = "[No external link found]"
                         if outbound_url and "bookmarks.reviews" not in outbound_url:
                             full_review_content = extract_external_body(session, outbound_url)
