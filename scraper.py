@@ -3,7 +3,8 @@ import requests
 from bs4 import BeautifulSoup
 
 def scrape_book_marks(book_slug):
-    url = f"https://bookmarks.reviews/reviews/{book_slug}/"
+    # Hardcoded /all/ path to capture the full list page you found
+    url = f"https://bookmarks.reviews/reviews/all/{book_slug}/"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
     }
@@ -22,51 +23,38 @@ def scrape_book_marks(book_slug):
     soup = BeautifulSoup(response.text, "html.parser")
     reviews_extracted = []
     
-    # Book Marks wraps individual reviews inside specialized review body blocks
-    review_containers = soup.find_all("div", class_="inner-review-body")
-    
-    # Alternative target container if classes shift dynamically
-    if not review_containers:
-        review_containers = soup.find_all("div", class_="review-card")
-
-    for container in review_containers:
-        try:
-            # 1. Pull the Critic and Source Outlet
-            critic = "Unknown Critic"
-            critic_span = container.find("span", class_="critic-name")
-            if critic_span:
-                critic = critic_span.get_text(strip=True)
+    # Target all main text blocks to harvest records sequentially
+    for div in soup.find_all("div"):
+        text = div.get_text(" ", strip=True)
+        
+        if text.startswith(("Rave ", "Positive ", "Mixed ", "Pan ")):
+            try:
+                parts = text.split(" ", 1)
+                rating = parts[0].strip()
+                remainder = parts[1].strip()
                 
-            outlet = "Unknown Outlet"
-            outlet_em = container.find("em", class_="outlet")
-            if outlet_em:
-                outlet = outlet_em.get_text(strip=True).strip(",")
-            
-            # 2. Extract Assigned Aggregated Rating Type
-            rating = "Unrated"
-            rating_div = container.find("div", class_="rating-image")
-            if rating_div and rating_div.find("img"):
-                img_alt = rating_div.find("img").get("alt", "")
-                if img_alt:
-                    rating = img_alt.strip().capitalize()
-
-            # 3. Pull the Review Snippet text block
-            snippet = ""
-            snippet_div = container.find("div", class_="review-snippet")
-            if snippet_div:
-                snippet = snippet_div.get_text(strip=True)
-                # Clean off trailing link indicators if present
-                snippet = snippet.replace("Read Full Review >>", "").strip()
-
-            if critic != "Unknown Critic" or outlet != "Unknown Outlet":
-                reviews_extracted.append({
-                    "critic": critic,
-                    "source_outlet": outlet,
-                    "aggregated_rating": rating,
-                    "review_snippet": snippet[:400] + "..." if len(snippet) > 400 else snippet
-                })
-        except Exception:
-            continue
+                if "," in remainder:
+                    meta_parts = remainder.split(",", 1)
+                    critic = meta_parts[0].strip()
+                    outlet_raw = meta_parts[1].strip()
+                    
+                    # Extract source outlet and isolate review snippet body text
+                    outlet = outlet_raw.split("...")[0].replace("Read Full Review >>", "").strip()
+                    snippet = text.split(critic)[-1].replace("Read Full Review >>", "").strip()
+                    snippet = snippet.replace(outlet_raw.split("...")[0], "", 1).lstrip(", ").strip()
+                    
+                    if "Similar Books" in text or len(critic) > 40 or len(outlet) > 40:
+                        continue
+                        
+                    if not any(d['critic'] == critic for d in reviews_extracted):
+                        reviews_extracted.append({
+                            "critic": critic,
+                            "source_outlet": outlet,
+                            "aggregated_rating": rating,
+                            "review_snippet": snippet[:300] + "..." if len(snippet) > 300 else snippet
+                        })
+            except Exception:
+                continue
 
     output_filename = f"{book_slug}_reviews.json"
     with open(output_filename, "w", encoding="utf-8") as f:

@@ -1,1 +1,50 @@
-[]
+[
+    {
+        "critic": "Ian Sansom",
+        "source_outlet": "The Guardian",
+        "aggregated_rating": "Rave",
+        "review_snippet": "...there is only one possible word to describe Robert Harris’s new novel, and it is this: unputdownable ... The information isn’t always easy to digest – for the reader or for the writer. As always with Harris, there is a lot of backstory and exposition ... in Conclave the sequence is very simple an..."
+    },
+    {
+        "critic": "Dennis Drabelle",
+        "source_outlet": "The Washington Post",
+        "aggregated_rating": "Rave",
+        "review_snippet": ""
+    },
+    {
+        "critic": "Vanessa Friedman",
+        "source_outlet": "The New York Times Book Review",
+        "aggregated_rating": "Positive",
+        "review_snippet": ""
+    },
+    {
+        "critic": "John Gapper",
+        "source_outlet": "The Financial Times",
+        "aggregated_rating": "Positive",
+        "review_snippet": ""
+    },
+    {
+        "critic": "Jocelyn McClurg",
+        "source_outlet": "USA Today",
+        "aggregated_rating": "Positive",
+        "review_snippet": ""
+    },
+    {
+        "critic": "Katherine A. Powers",
+        "source_outlet": "The Barnes & Noble Review",
+        "aggregated_rating": "Positive",
+        "review_snippet": ""
+    },
+    {
+        "critic": "Gerald Bartell",
+        "source_outlet": "The San Francisco Chronicle",
+        "aggregated_rating": "Positive",
+        "review_snippet": ""
+    },
+    {
+        "critic": "Allan Massie",
+        "source_outlet": "The Wall Street Journal",
+        "aggregated_rating": "Rave",
+        "review_snippet": ""
+    }
+]
