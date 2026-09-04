@@ -2,46 +2,63 @@ import json
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
+import time
 
 def extract_external_body(session, target_url):
+    """
+    Spoofs Googlebot identifiers and standard crawler routing metadata
+    to safely access articles past basic paywalls.
+    """
+    # Authentic Googlebot headers and verification signatures
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9"
+        "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://google.com)",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+        "X-Forwarded-For": "66.249.66.1", # Spoofs a known Google IP range block
     }
+    
     try:
-        print(f"   --> Launching sub-request to publisher: {target_url}")
-        res = session.get(target_url, headers=headers, timeout=10)
+        print(f"   --> Impersonating Googlebot to fetch: {target_url}")
+        # Add a small delay to mimic human/polite crawler cadence and avoid rate limits
+        time.sleep(1.5)
+        
+        res = session.get(target_url, headers=headers, timeout=12)
         if res.status_code != 200:
-            return f"[Could not download full text. HTTP Status {res.status_code}]"
+            return f"[Bypassing Failed. HTTP Status {res.status_code}]"
             
         sub_soup = BeautifulSoup(res.text, "html.parser")
-        paragraphs = sub_soup.find_all("p")
+        
+        # Target main editorial structural text layouts
+        paragraphs = sub_soup.find_all(["p", "article"])
         full_text_fragments = []
         
         for p in paragraphs:
             txt = p.get_text(" ", strip=True)
-            if len(txt) > 60 and not any(k in txt.lower() for k in ["cookie", "subscribe", "sign in", "all rights reserved"]):
+            # Filter out junk navigation lines, logins, and repetitive cookies tags
+            if len(txt) > 70 and not any(k in txt.lower() for k in ["cookie", "subscribe", "sign in", "account", "all rights reserved"]):
                 if txt not in full_text_fragments:
                     full_text_fragments.append(txt)
                     
         if full_text_fragments:
-            return " ".join(full_text_fragments[:25])
+            return " ".join(full_text_fragments[:30]) # Extracted full payload slice
             
-        return "[Full review body text not readable via semantic selectors]"
+        return "[Text layout body unreadable via baseline elements]"
     except Exception as e:
-        return f"[Failed to parse due to network exception or paywall: {e}]"
+        return f"[Spoofing execution network failure: {e}]"
 
 def scrape_book_marks(book_slug):
-    base_url = f"https://bookmarks.reviews/reviews/all/{book_slug}/"
+    base_url = f"https://bookmarks.reviews{book_slug}/"
     session = requests.Session()
+    
+    # Use standard modern desktop header for the initial Book Marks pull
     session.headers.update({
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
     })
     
-    print(f"Connecting to root endpoint: {base_url}")
+    print(f"Connecting to root aggregation index: {base_url}")
     response = session.get(base_url)
     if response.status_code != 200:
-        print(f"Failed to fetch page. Status: {response.status_code}")
+        print(f"Failed to fetch index layout. Status: {response.status_code}")
         return
 
     soup = BeautifulSoup(response.text, "html.parser")
@@ -71,7 +88,7 @@ def scrape_book_marks(book_slug):
                         outbound_url = urljoin(base_url, link_element.get("href"))
 
                     if not any(d['critic'] == critic for d in reviews_extracted):
-                        full_review_content = "[No external hyperlink found]"
+                        full_review_content = "[No external link found]"
                         if outbound_url and "bookmarks.reviews" not in outbound_url:
                             full_review_content = extract_external_body(session, outbound_url)
                         
@@ -89,7 +106,7 @@ def scrape_book_marks(book_slug):
     output_filename = f"{book_slug}_full_reviews.json"
     with open(output_filename, "w", encoding="utf-8") as f:
         json.dump(reviews_extracted, f, indent=4, ensure_ascii=False)
-    print(f"\nSuccess! Gathered data for {len(reviews_extracted)} critics and saved to {output_filename}")
+    print(f"\nSuccess! Scraped data for {len(reviews_extracted)} critics into {output_filename}")
 
 if __name__ == "__main__":
     scrape_book_marks("conclave")
