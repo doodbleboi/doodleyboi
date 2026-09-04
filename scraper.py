@@ -13,8 +13,8 @@ def extract_external_body(session, target_url):
     }
     try:
         print(f"   --> Impersonating Googlebot to fetch: {target_url}")
-        time.sleep(1.5)
-        res = session.get(target_url, headers=headers, timeout=12)
+        time.sleep(1)
+        res = session.get(target_url, headers=headers, timeout=10)
         if res.status_code != 200:
             return f"[Bypassing Failed. HTTP Status {res.status_code}]"
         sub_soup = BeautifulSoup(res.text, "html.parser")
@@ -26,10 +26,10 @@ def extract_external_body(session, target_url):
                 if txt not in full_text_fragments:
                     full_text_fragments.append(txt)
         if full_text_fragments:
-            return " ".join(full_text_fragments[:30])
-        return "[Text layout body unreadable via baseline elements]"
+            return " ".join(full_text_fragments[:25])
+        return "[Text body unreadable via layout parameters]"
     except Exception as e:
-        return f"[Spoofing execution network failure: {e}]"
+        return f"[Network exception or firewall block: {e}]"
 
 def scrape_book_marks(book_slug):
     base_url = f"https://bookmarks.reviews{book_slug}/"
@@ -37,7 +37,7 @@ def scrape_book_marks(book_slug):
     session.headers.update({
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
     })
-    print(f"Connecting to root aggregation index: {base_url}")
+    print(f"Connecting to: {base_url}")
     response = session.get(base_url)
     if response.status_code != 200:
         print(f"Failed to fetch index layout. Status: {response.status_code}")
@@ -62,7 +62,7 @@ def scrape_book_marks(book_slug):
                     link_element = div.find("a")
                     if link_element and link_element.get("href"):
                         outbound_url = urljoin(base_url, link_element.get("href"))
-                    if not any(d["critic"] == critic for d in reviews_extracted):
+                    if not any(d['critic'] == critic for d in reviews_extracted):
                         full_review_content = "[No external link found]"
                         if outbound_url and "bookmarks.reviews" not in outbound_url:
                             full_review_content = extract_external_body(session, outbound_url)
@@ -79,7 +79,7 @@ def scrape_book_marks(book_slug):
     output_filename = f"{book_slug}_full_reviews.json"
     with open(output_filename, "w", encoding="utf-8") as f:
         json.dump(reviews_extracted, f, indent=4, ensure_ascii=False)
-    print(f"\nSuccess! Scraped data for {len(reviews_extracted)} critics into {output_filename}")
+    print(f"\nSuccess! Scraped {len(reviews_extracted)} critics into {output_filename}")
 
 if __name__ == "__main__":
     scrape_book_marks("conclave")
