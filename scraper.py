@@ -3,7 +3,6 @@ import requests
 from bs4 import BeautifulSoup
 
 def scrape_book_marks(book_slug):
-    # Fixed the missing path separator slash here
     url = f"https://bookmarks.reviews{book_slug}/"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
@@ -27,7 +26,6 @@ def scrape_book_marks(book_slug):
     for div in soup.find_all("div"):
         text = div.get_text(" ", strip=True)
         
-        # Match headings starting with specific grading thresholds
         if text.startswith(("Rave ", "Positive ", "Mixed ", "Pan ")):
             try:
                 parts = text.split(" ", 1)
@@ -40,7 +38,6 @@ def scrape_book_marks(book_slug):
                     critic = meta_parts[0].strip()
                     outlet = meta_parts[1].strip()
                     
-                    # Clean out trailing action text
                     if " " in outlet:
                         outlet = outlet.split(" ")[0].strip(",")
                     
