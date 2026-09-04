@@ -32,7 +32,7 @@ def extract_external_body(session, target_url):
         return f"[Failed to parse due to network exception or paywall: {e}]"
 
 def scrape_book_marks(book_slug):
-    base_url = f"https://bookmarks.reviews{book_slug}/"
+    base_url = f"https://bookmarks.reviews/reviews/all/{book_slug}/"
     session = requests.Session()
     session.headers.update({
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
@@ -66,10 +66,7 @@ def scrape_book_marks(book_slug):
                         continue
                         
                     outbound_url = None
-                    link_element = div.find("a", string=lambda s: s and "Read Full Review" in str(s))
-                    if not link_element:
-                        link_element = div.find("a", href=True)
-                        
+                    link_element = div.find("a")
                     if link_element and link_element.get("href"):
                         outbound_url = urljoin(base_url, link_element.get("href"))
 
@@ -83,7 +80,7 @@ def scrape_book_marks(book_slug):
                             "source_outlet": outlet,
                             "aggregated_rating": rating,
                             "outbound_link": outbound_url,
-                            "book_marks_snippet": text.split(critic)[-1].split("Read Full Review >>")[0].strip(),
+                            "book_marks_snippet": text.split(critic)[-1].replace("Read Full Review >>", "").strip(),
                             "extracted_full_review_text": full_review_content
                         })
             except Exception:
